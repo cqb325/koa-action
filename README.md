@@ -1,4 +1,6 @@
 # koa-action
+![](https://img.shields.io/badge/koa--action-1.0.0-blue.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/licence-MIT%20License-blue.svg) ![](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)
+
 koa2 mvc framework  easy to use
 
 `environment`: Node.js >= 7.6.0
