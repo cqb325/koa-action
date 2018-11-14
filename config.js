@@ -18,5 +18,5 @@ module.exports = {
     maxFileSize: 2 * 1024 * 1024,
 
     //中间件顺序
-    middleware: ['database']
+    middleware: ['database', 'koa-body']
 }
