@@ -1,5 +1,5 @@
 # koa-action
-![](https://img.shields.io/badge/koa--action-1.0.2-blue.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/licence-MIT%20License-blue.svg) ![](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)
+![](https://img.shields.io/badge/koa--action-1.0.6-blue.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/licence-MIT%20License-blue.svg) ![](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)
 
 koa2 mvc framework  easy to use
 
