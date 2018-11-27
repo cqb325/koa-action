@@ -15,6 +15,8 @@ module.exports = {
     views: '/views',
     //upload file dir
     upload: '/static/upload',
+    // default
+    formLimit: 56 * 1024,
     maxFileSize: 2 * 1024 * 1024,
 
     //中间件顺序
