@@ -1,9 +1,14 @@
 const { randomBytes } = require('crypto');
+const Configstore = require('configstore');
 
 class Store {
     constructor() {
-        this.sessions = new Map();
+        this.config = new Configstore('./session.json');
         this.__timer = new Map();
+
+        process.on('exit', (code) => {
+            this.config.clear();
+        });
     }
 
     getID(length) {
@@ -11,15 +16,14 @@ class Store {
     }
 
     get(sid) {
-        if (!this.sessions.has(sid)) return undefined;
+        if(!this.config.has(sid)) return undefined;
         // We are decoding data coming from our Store, so, we assume it was sanitized before storing
-        return JSON.parse(this.sessions.get(sid));
+        return JSON.parse(this.config.get(sid));
     }
 
     set(session, { sid =  this.getID(24), maxAge } = {}) {
-        sid = this.getID(24);
         // Just a demo how to use maxAge and some cleanup
-        if (this.sessions.has(sid) && this.__timer.has(sid)) {
+        if (this.config.has(sid) && this.__timer.has(sid)) {
             const __timeout = this.__timer.get(sid);
             if (__timeout) clearTimeout(__timeout);
         }
@@ -28,7 +32,7 @@ class Store {
             this.__timer.set(sid, setTimeout(() => this.destroy(sid), maxAge));
         }
         try {
-            this.sessions.set(sid, JSON.stringify(session));
+            this.config.set(sid, JSON.stringify(session));
         } catch (err) {
             console.log('Set session error:', err);
         }
@@ -37,8 +41,7 @@ class Store {
     }
 
     destroy(sid) {
-        this.sessions.delete(sid);
-        this.__timer.delete(sid);
+        this.config.delete(sid);
     }
 }
 
