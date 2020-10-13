@@ -1,6 +1,6 @@
 {
   "name": "koa-action-stp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "koa mvc framework",
   "main": "lib/index.js",
   "scripts": {
