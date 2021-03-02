@@ -8,7 +8,7 @@
     "server": "node server"
   },
   "author": "cqb325@163.com",
-  "license": "MIT License",
+  "license": "MIT",
   "dependencies": {
     "configstore": "^5.0.1",
     "koa": "^2.13.1",
