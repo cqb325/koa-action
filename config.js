@@ -1,10 +1,10 @@
 module.exports = {
     database: {
-        'host': '127.0.0.1',
+        'host': '172.21.16.15',
         'port': 3306,
-        'user': 'root',
-        'password': '123456',
-        'database': 'cmui'
+        'user': 'speedtest',
+        'password': 'cmcc2018',
+        'database': 'speedtest'
     },
     dev: true,
     port: 3000,
