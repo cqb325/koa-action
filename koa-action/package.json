@@ -1,17 +1,16 @@
 {
-  "name": "decorators-in-nodejs",
-  "version": "1.0.0",
-  "description": "An example for using decorators with Node.JS",
-  "main": "index.js",
+  "name": "koa-action",
+  "version": "2.0.0",
+  "description": "web framework for koa2",
+  "main": "build/index.js",
   "scripts": {
-    "dev": "nodemon --watch src --watch koa-action -e ts,tsx --exec ts-node src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "test": "ts-node test.ts"
+    "build": "tsc"
   },
   "keywords": [
     "decorator",
-    "nodejs"
+    "koa-action",
+    "koa",
+    "web framework"
   ],
   "author": "cqb325@163.com",
   "license": "MIT",
@@ -30,9 +29,19 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
+    "@koa/ejs": "^5.0.0",
+    "@koa/router": "^12.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "jsonwebtoken": "^9.0.0",
+    "koa": "^2.14.1",
+    "koa-body": "^6.0.1",
+    "koa-compress": "^5.1.0",
+    "koa-favicon": "^2.1.0",
+    "koa-generic-session": "^2.3.0",
+    "koa-redis": "^4.0.1",
+    "koa-static": "^5.0.0",
+    "mysql2": "^3.0.1",
     "typeorm": "^0.3.11"
   }
 }

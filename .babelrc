@@ -1,0 +1,12 @@
+{
+    "presets": [
+        "@babel/preset-env"
+    ],
+    "assumptions": {
+        "setPublicClassFields": true
+    },
+    "plugins": [
+        ["@babel/plugin-proposal-decorators", { "loose" : true, "legacy": true }],
+        ["@babel/plugin-proposal-class-properties", { "loose" : true }]
+    ]
+}
