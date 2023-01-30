@@ -97,6 +97,7 @@ export class KoaAction {
             flush: require('zlib').constants.Z_SYNC_FLUSH
         }));
 
+        // session
         if (this.config.redisSession) {
             this.koa.keys = ['koa-action', 'koa2'];
             const session = require('koa-generic-session');
@@ -106,6 +107,18 @@ export class KoaAction {
             ops.store = redisStore(this.config.redisSession.redisOptions || {});
             
             this.use(session(ops));
+        }
+
+        // views
+        if (this.config.views) {
+            const ejsRender = require('@koa/ejs');
+            ejsRender(this.koa, {
+                root: path.join(process.cwd(), this.config.views),
+                layout: false,
+                viewExt: 'html',
+                cache: false,
+                debug: false
+            });
         }
     }
 
