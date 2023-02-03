@@ -10,4 +10,5 @@ export * from './errors/RequestParamInvalidError';
 export * from './Authorization';
 export * from './BaseController';
 export * from './Interceptor';
+export * from './redis';
 export { ConfigOptions, Route } from './types/index.d';

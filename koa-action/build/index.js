@@ -26,3 +26,4 @@ __exportStar(require("./errors/RequestParamInvalidError"), exports);
 __exportStar(require("./Authorization"), exports);
 __exportStar(require("./BaseController"), exports);
 __exportStar(require("./Interceptor"), exports);
+__exportStar(require("./redis"), exports);

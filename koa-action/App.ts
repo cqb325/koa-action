@@ -1,3 +1,4 @@
+import { ScanInterceptor } from './ScanInterceptor';
 import { HttpError } from './errors/HttpError';
 import { Router } from './ScanRouter';
 import { ConfigOptions } from './types/index';
@@ -5,10 +6,10 @@ import KoaBody from 'koa-body';
 import { Interceptor } from './Interceptor';
 import { DefaultDataResponse } from './DefaultDataResponse';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import { Global } from "./Global";
 import Koa from 'koa';
 import path from 'node:path';
 
-export let ds:DataSource;
 export class KoaAction {
     public koa: any
     public router: any
@@ -28,15 +29,16 @@ export class KoaAction {
      * @return {[type]} [description]
      */
     init(): void {
-        const configUri = Reflect.getMetadata('ccc:configPath', this);
-        if (!Reflect.hasMetadata('ccc:configPath', this)) {
-            throw new Error('starting App class needs to use @Config to specify the config file');
+        if (!Global.config) {
+            throw new Error('import config to initialize Global.config in the first line');
         }
-        this.config = require(path.resolve(process.cwd(), configUri));
+        this.config = Global.config;
         //初始化错误处理
         this.initErrors();
-        //初始化数据库
+        // 加载中间件
         this.loadMiddlewares();
+        // 初始化数据库
+        this.registerDataSource();
     }
 
     /**
@@ -128,10 +130,14 @@ export class KoaAction {
      */
     run(callback?: Function): void {
         this.registerControllers();
+        this.scanInterceptors();
         //初始化路由
         this.initRouters();
 
-        this.koa.listen(this.config.port,()=>{
+        this.koa.listen({
+            host: this.config.host || '0.0.0.0',
+            port: this.config.port
+        },()=>{
             if (callback) {
                 callback.apply(this, arguments);
             }
@@ -162,7 +168,10 @@ export class KoaAction {
             },
             formLimit: this.config.formLimit
         });
-        this.router = new Router(this);
+        this.router = new Router(this, {
+            prefix: `/${this.config.serviceName || ''}`
+        });
+
         if (!Reflect.hasMetadata('ccc:scanDirectories', this)) {
             throw new Error('starting App class needs to use @ScanPath to specify the controllers directories');
         }
@@ -187,7 +196,7 @@ export class KoaAction {
      */
     private handlerError (error: any, ctx: any) {
         if (error instanceof HttpError) {
-            console.log('httpError...');
+            console.log('httpError...', error);
             ctx.status = error.code;
             ctx.body = DefaultDataResponse.failWithCodeMessage(error.code, error.message || error.stack);
         } else {
@@ -226,10 +235,30 @@ export class KoaAction {
         if (options) {
             this.dataSource = new DataSource(options);
         } else {
-            this.dataSource = new DataSource(this.config.dataSource);
+            const dsConfig = this.config.dataSource;
+            if (dsConfig) {
+                this.dataSource = new DataSource(dsConfig);
+            }
         }
-        ds = this.dataSource;
+        Global.dataSource = this.dataSource;
         await this.dataSource.initialize();
+        return this;
+    }
+
+    /**
+     * 扫描拦截器
+     * @returns 
+     */
+    private scanInterceptors () {
+        if (Global.interceptorsDirectories && Global.interceptorsDirectories.length) {
+            let dirs = Global.interceptorsDirectories;
+            const scanor = new ScanInterceptor(dirs);
+            scanor.scan();
+
+            scanor.interceptors.forEach(interceptorModule => {
+                this.registerInterceptor(interceptorModule);
+            });
+        }
         return this;
     }
 }

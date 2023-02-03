@@ -3,12 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.KoaAction = exports.ds = void 0;
+exports.KoaAction = void 0;
+const ScanInterceptor_1 = require("./ScanInterceptor");
 const HttpError_1 = require("./errors/HttpError");
 const ScanRouter_1 = require("./ScanRouter");
 const koa_body_1 = __importDefault(require("koa-body"));
 const DefaultDataResponse_1 = require("./DefaultDataResponse");
 const typeorm_1 = require("typeorm");
+const Global_1 = require("./Global");
 const koa_1 = __importDefault(require("koa"));
 const node_path_1 = __importDefault(require("node:path"));
 class KoaAction {
@@ -24,15 +26,16 @@ class KoaAction {
      * @return {[type]} [description]
      */
     init() {
-        const configUri = Reflect.getMetadata('ccc:configPath', this);
-        if (!Reflect.hasMetadata('ccc:configPath', this)) {
-            throw new Error('starting App class needs to use @Config to specify the config file');
+        if (!Global_1.Global.config) {
+            throw new Error('import config to initialize Global.config in the first line');
         }
-        this.config = require(node_path_1.default.resolve(process.cwd(), configUri));
+        this.config = Global_1.Global.config;
         //初始化错误处理
         this.initErrors();
-        //初始化数据库
+        // 加载中间件
         this.loadMiddlewares();
+        // 初始化数据库
+        this.registerDataSource();
     }
     /**
      * 初始化错误处理
@@ -85,6 +88,7 @@ class KoaAction {
         this.koa.use(compress({
             flush: require('zlib').constants.Z_SYNC_FLUSH
         }));
+        // session
         if (this.config.redisSession) {
             this.koa.keys = ['koa-action', 'koa2'];
             const session = require('koa-generic-session');
@@ -93,6 +97,17 @@ class KoaAction {
             ops.store = redisStore(this.config.redisSession.redisOptions || {});
             this.use(session(ops));
         }
+        // views
+        if (this.config.views) {
+            const ejsRender = require('@koa/ejs');
+            ejsRender(this.koa, {
+                root: node_path_1.default.join(process.cwd(), this.config.views),
+                layout: false,
+                viewExt: 'html',
+                cache: false,
+                debug: false
+            });
+        }
     }
     /**
      * 运行
@@ -100,9 +115,13 @@ class KoaAction {
      */
     run(callback) {
         this.registerControllers();
+        this.scanInterceptors();
         //初始化路由
         this.initRouters();
-        this.koa.listen(this.config.port, () => {
+        this.koa.listen({
+            host: this.config.host || '0.0.0.0',
+            port: this.config.port
+        }, () => {
             if (callback) {
                 callback.apply(this, arguments);
             }
@@ -131,7 +150,9 @@ class KoaAction {
             },
             formLimit: this.config.formLimit
         });
-        this.router = new ScanRouter_1.Router(this);
+        this.router = new ScanRouter_1.Router(this, {
+            prefix: `/${this.config.serviceName || ''}`
+        });
         if (!Reflect.hasMetadata('ccc:scanDirectories', this)) {
             throw new Error('starting App class needs to use @ScanPath to specify the controllers directories');
         }
@@ -154,7 +175,7 @@ class KoaAction {
      */
     handlerError(error, ctx) {
         if (error instanceof HttpError_1.HttpError) {
-            console.log('httpError...');
+            console.log('httpError...', error);
             ctx.status = error.code;
             ctx.body = DefaultDataResponse_1.DefaultDataResponse.failWithCodeMessage(error.code, error.message || error.stack);
         }
@@ -194,10 +215,28 @@ class KoaAction {
             this.dataSource = new typeorm_1.DataSource(options);
         }
         else {
-            this.dataSource = new typeorm_1.DataSource(this.config.dataSource);
+            const dsConfig = this.config.dataSource;
+            if (dsConfig) {
+                this.dataSource = new typeorm_1.DataSource(dsConfig);
+            }
         }
-        exports.ds = this.dataSource;
+        Global_1.Global.dataSource = this.dataSource;
         await this.dataSource.initialize();
+        return this;
+    }
+    /**
+     * 扫描拦截器
+     * @returns
+     */
+    scanInterceptors() {
+        if (Global_1.Global.interceptorsDirectories && Global_1.Global.interceptorsDirectories.length) {
+            let dirs = Global_1.Global.interceptorsDirectories;
+            const scanor = new ScanInterceptor_1.ScanInterceptor(dirs);
+            scanor.scan();
+            scanor.interceptors.forEach(interceptorModule => {
+                this.registerInterceptor(interceptorModule);
+            });
+        }
         return this;
     }
 }

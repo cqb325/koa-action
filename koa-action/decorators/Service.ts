@@ -1,4 +1,8 @@
+import { Global } from "../Global";
 export function Service (target: any, propertyKey: any): void {
     const Type = Reflect.getMetadata('design:type', target, propertyKey);
-    target[propertyKey] = new Type();
+    if (!Global.beans.has(Type)) {
+        Global.beans.set(Type, new Type());
+    }
+    target[propertyKey] = Global.beans.get(Type);
 }

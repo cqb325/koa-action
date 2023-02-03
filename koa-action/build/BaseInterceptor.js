@@ -8,16 +8,33 @@ class BaseInterceptor {
     }
     antMatchers(...patterns) {
         patterns.forEach((pattern) => {
-            this.matchers.push((0, path_to_regexp_1.match)(pattern, {
+            this.matchers.push((0, path_to_regexp_1.match)('/(.*)' + pattern, {
                 decode: decodeURIComponent,
             }));
         });
         return this;
     }
+    /**
+     * 初始化
+     * @returns
+     */
     antInit() {
         this.matchers = [];
         return this;
     }
+    /**
+     * 设置X-Frame-Options
+     * @param ctx
+     */
+    sameOrign(ctx) {
+        ctx.set('X-Frame-Options', 'SAMEORIGIN');
+        return this;
+    }
+    /**
+     * 无需校验
+     * @param url
+     * @returns
+     */
     permitAll(url) {
         let needCheck = true;
         for (let matcher of this.matchers) {

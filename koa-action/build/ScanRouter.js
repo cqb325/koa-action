@@ -75,6 +75,15 @@ class Router extends KoaRouter {
                 if (field.type === 'cookies') {
                     args[field.index] = ctx.cookies;
                 }
+                if (field.type === 'session') {
+                    args[field.index] = ctx.session;
+                }
+                if (field.type === 'sessionParam') {
+                    args[field.index] = ctx.session[field.name];
+                }
+                if (field.type === 'auth') {
+                    args[field.index] = ctx.auth;
+                }
             });
         }
         return args;
