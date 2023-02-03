@@ -8,6 +8,10 @@ export function Post (url:string): MethodDecorator {
     return fn(url, 'post');
 }
 
+export function Head (url:string): MethodDecorator {
+    return fn(url, 'head');
+}
+
 export function Put (url:string): MethodDecorator {
     return fn(url, 'put');
 }

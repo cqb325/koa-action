@@ -1,16 +1,25 @@
-module.exports = {
-    port: 50000,
+import { Global } from "../koa-action/Global";
+
+Global.config = {
+    serviceName: 'fqbdService',
+    port: 18080,
     dataSource: {
         type: "mysql",
-        host: "localhost",
+        host: "172.21.46.186",
         port: 3306,
-        username: "root",
-        password: "123456",
-        database: "test",
+        username: "speedtest",
+        password: "cmcc2021",
+        database: "fqbd",
         entities: ['src/**/*.entity{.js,.ts}'],
         synchronize: false,
-        logger: 'advanced-console',
-        logging: 'all',
+        logger: undefined, // 'advanced-console',
+        logging: false //'all',
+    },
+    redis: {
+        host: '127.0.0.1',
+        port: 6379,
+        password: '',
+        db: 2
     },
     redisSession: {
         sessionOptions: {

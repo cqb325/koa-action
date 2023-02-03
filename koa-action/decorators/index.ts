@@ -10,3 +10,6 @@ export * from './ScanPath';
 export * from './Config';
 export * from './Validate';
 export * from './AutoRepository';
+export * from './Session';
+export * from './ScanInterceptors';
+export * from './Auth';

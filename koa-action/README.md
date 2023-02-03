@@ -30,21 +30,22 @@ yarn add koa-action
 
 ### index.ts
 	
-	import KoaAction from '../koa-action/index';
+	import './config';
+	import { KoaAction, ScanPath } from '../koa-action';
 	import { AuthInterceptor } from './interceptors/AuthInterceptor';
-	import { ScanPath, Config } from '../koa-action/index';
-	
+
 	@ScanPath('./src/controllers')
-	@Config('./src/config.ts')
 	class Service extends KoaAction{
-	    constructor () {
-	        super();
-	
-	        this.registerDataSource();
-	    }
+		constructor () {
+			super();
+		}
 	}
 	const s = new Service();
-	s.registerInterceptor(new AuthInterceptor({secret: 'shared-secret'})).run();
+	s.use(async (ctx: any, next: any) => {
+		console.log(ctx.request.url);
+		await next();
+	});
+	s.registerInterceptor(new AuthInterceptor()).run();
 
 	//run
 	npm run dev
@@ -52,28 +53,38 @@ yarn add koa-action
 
 ### config.ts
 
-	module.exports = {
-	    port: 50000,	// server start port
-	    dataSource: {	// typeorm DataSouceOptions
-	        type: "mysql",
-	        host: "localhost",
-	        port: 3306,
-	        username: "root",
-	        password: "",
-	        database: "test",
-	        entities: ['src/**/*.entity{.js,.ts}'],
-	        synchronize: false,
-	        logging: 'all',
-	    },
-	    redisSession: {	// session - redis options
-	        sessionOptions: {
-	            key: 'ka.sid',
-	            ttl: 5 * 60 * 1000  // 5分钟
-	        },
-	        redisOptions: {
-	            db: 2,
-	        }
-	    }
+	import { Global } from "../koa-action/Global";
+
+	Global.config = {
+		serviceName: 'fqbdService',
+		port: 18080,
+		dataSource: {
+			type: "mysql",
+			host: "172.21.46.186",
+			port: 3306,
+			username: "speedtest",
+			password: "cmcc2021",
+			database: "fqbd",
+			entities: ['src/**/*.entity{.js,.ts}'],
+			synchronize: false,
+			logger: undefined, // 'advanced-console',
+			logging: false //'all',
+		},
+		redis: {
+			host: '127.0.0.1',
+			port: 6379,
+			password: '',
+			db: 2
+		},
+		redisSession: {
+			sessionOptions: {
+				key: 'ka.sid',
+				ttl: 5 * 60 * 1000  // 5分钟
+			},
+			redisOptions: {
+				db: 2,
+			}
+		}
 	};
 
 
@@ -86,12 +97,6 @@ yarn add koa-action
 	@ScanPath('./src/controllers')
 	class Service extends KoaAction{}
 
-### @Config('path')
-类装饰器 指定配置文件路径
-
-	@Config('./src/config.ts')
-	class Service extends KoaAction{}
-
 ### @Controller('/path')
 类装饰器 指定模块路由
 
@@ -99,13 +104,13 @@ yarn add koa-action
 	class AdminController {}
 
 ### @Service
-属性装饰器 注入该类型的对象，无传值
+属性装饰器 注入该类型的对象，对应的对象只初始化一次，无传值
 
 	@Service
     private adminService: AdminService;
 
 ### @Autowired
-属性装饰器 注入该类型的对象，无传值
+属性装饰器 注入该类型的对象，对应的对象只初始化一次， 无传值
 
 	@Autowired
     private userDao: UserDao;
@@ -127,6 +132,9 @@ yarn add koa-action
 
 ### @Delete
 函数装饰器method 为Delete的路由
+
+### @Head
+函数装饰器method 为Head的路由
 
 ### @All
 函数装饰器method 为All的路由
@@ -168,10 +176,19 @@ yarn add koa-action
 属性装饰器 获取ctx.response对象
 
 ### @Cookies
-属性装饰器 获取ctx.cookies对象
+属性装饰器 获取cookies对象
 
 ### @Cookie('key')
-属性装饰器 获取ctx.cookies对象中指定的参数
+属性装饰器 获取cookies对象中指定的参数
+
+### @Session
+属性装饰器 获取session对象
+
+### @SessionParam('key')
+属性装饰器 获取session对象中的属性
+
+### @Auth
+属性装饰器 获取授权信息
 
 ### @Validate
 属性装饰器 对属性进行校验，使用class-validator组件
@@ -179,3 +196,6 @@ yarn add koa-action
 	@Post('/add')
     async add (@Validate @Body a: User):Promise<DataResponse> {}
 
+### 其他可以使用的业务模块
+定时任务 agenda
+消息队列 bull

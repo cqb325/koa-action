@@ -5,15 +5,26 @@ export interface Route {
     handler: any
 }
 
-export interface ConfigOptions {
+declare type RedisOptions = {
+    host: string,
     port: number,
-    controllers: string | string[],
-    upload: string,
-    maxFileSize: number,
-    formLimit: number,
-    favicon: string,
-    static: string,
-    dataSource: DataSourceOptions,
+    password: string,
+    db: number
+}
+
+export interface ConfigOptions {
+    serviceName?: string,
+    host?: string,
+    port: number,
+    controllers?: string | string[],
+    upload?: string,
+    maxFileSize?: number,
+    formLimit?: number,
+    favicon?: string,
+    static?: string,
+    dataSource?: DataSourceOptions,
     redisSession: any,
-    views: string
+    views?: string,
+    redis?: RedisOptions,
+    sessionExp?: number = 30
 }

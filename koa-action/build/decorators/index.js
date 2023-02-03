@@ -26,3 +26,6 @@ __exportStar(require("./ScanPath"), exports);
 __exportStar(require("./Config"), exports);
 __exportStar(require("./Validate"), exports);
 __exportStar(require("./AutoRepository"), exports);
+__exportStar(require("./Session"), exports);
+__exportStar(require("./ScanInterceptors"), exports);
+__exportStar(require("./Auth"), exports);
