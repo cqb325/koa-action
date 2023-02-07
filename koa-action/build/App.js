@@ -11,8 +11,9 @@ const koa_body_1 = __importDefault(require("koa-body"));
 const DefaultDataResponse_1 = require("./DefaultDataResponse");
 const typeorm_1 = require("typeorm");
 const Global_1 = require("./Global");
-const koa_1 = __importDefault(require("koa"));
+const log4js_1 = __importDefault(require("log4js"));
 const node_path_1 = __importDefault(require("node:path"));
+const koa_1 = __importDefault(require("koa"));
 class KoaAction {
     constructor(options = {}) {
         this.options = options;
@@ -30,6 +31,10 @@ class KoaAction {
             throw new Error('import config to initialize Global.config in the first line');
         }
         this.config = Global_1.Global.config;
+        if (this.config.logger) {
+            log4js_1.default.configure(this.config.logger);
+            this.logger = log4js_1.default.getLogger();
+        }
         //初始化错误处理
         this.initErrors();
         // 加载中间件
@@ -43,19 +48,22 @@ class KoaAction {
      */
     initErrors() {
         // 监控错误日志
-        this.koa.on('error', function (err, ctx) {
+        this.koa.on('error', (err, ctx) => {
             // utils.log(err);
             console.error(err);
+            this.logger.error(err);
         });
         // 捕获promise reject错误
         process.on('unhandledRejection', (reason) => {
             // utils.log(reason);
             console.error(reason);
+            this.logger.error(reason);
         });
         // 捕获未知错误
-        process.on('uncaughtException', function (err) {
+        process.on('uncaughtException', (err) => {
             // utils.log(err);
             console.error(err);
+            this.logger.error(err);
             if (err.message.indexOf(' EADDRINUSE ') > -1) {
                 process.exit();
             }
@@ -114,18 +122,22 @@ class KoaAction {
      * @return {[type]} [description]
      */
     run(callback) {
+        this.logger.debug('start register controllers');
         this.registerControllers();
+        this.logger.debug('start scan interceptors');
         this.scanInterceptors();
         //初始化路由
         this.initRouters();
+        const host = this.config.host || '0.0.0.0';
         this.koa.listen({
-            host: this.config.host || '0.0.0.0',
+            host: host,
             port: this.config.port
         }, () => {
             if (callback) {
                 callback.apply(this, arguments);
             }
-            console.log("server listen on " + this.config.port);
+            this.logger.debug('server listen on ' + host + ":" + this.config.port);
+            console.log("server listen on " + host + ":" + this.config.port);
         });
     }
     /**
@@ -141,6 +153,7 @@ class KoaAction {
      * 注册controllers
      */
     registerControllers() {
+        this.logger.debug('use koabody ');
         this.koaBody = (0, koa_body_1.default)({
             multipart: true,
             formidable: {
@@ -150,13 +163,16 @@ class KoaAction {
             },
             formLimit: this.config.formLimit
         });
+        this.logger.debug(`route prefix /${this.config.serviceName || ''}`);
         this.router = new ScanRouter_1.Router(this, {
             prefix: `/${this.config.serviceName || ''}`
         });
         if (!Reflect.hasMetadata('ccc:scanDirectories', this)) {
+            this.logger.error('starting App class needs to use @ScanPath to specify the controllers directories');
             throw new Error('starting App class needs to use @ScanPath to specify the controllers directories');
         }
         const dirs = Reflect.getMetadata('ccc:scanDirectories', this);
+        this.logger.debug(`controllers directors ${dirs}`);
         this.router.scan(dirs);
     }
     /**
@@ -165,6 +181,7 @@ class KoaAction {
      * @returns
      */
     registerInterceptor(interceptor) {
+        this.logger.debug(`add interceptor ${interceptor}`);
         this.interceptors.push(interceptor);
         return this;
     }
@@ -176,11 +193,13 @@ class KoaAction {
     handlerError(error, ctx) {
         if (error instanceof HttpError_1.HttpError) {
             console.log('httpError...', error);
+            this.logger.error(`[HttpError] ${error}`);
             ctx.status = error.code;
             ctx.body = DefaultDataResponse_1.DefaultDataResponse.failWithCodeMessage(error.code, error.message || error.stack);
         }
         else {
             console.log('normal Error...', error);
+            this.logger.error(`[NormalError] ${error}`);
             let statusCode = error.status || error.statusCode || 500;
             ctx.status = statusCode;
             ctx.body = DefaultDataResponse_1.DefaultDataResponse.failWithCodeMessage(statusCode, error.message || error.stack);
@@ -212,11 +231,13 @@ class KoaAction {
      */
     async registerDataSource(options) {
         if (options) {
+            this.logger.debug(`datasource config ${options}`);
             this.dataSource = new typeorm_1.DataSource(options);
         }
         else {
             const dsConfig = this.config.dataSource;
             if (dsConfig) {
+                this.logger.debug(`datasource config ${dsConfig}`);
                 this.dataSource = new typeorm_1.DataSource(dsConfig);
             }
         }

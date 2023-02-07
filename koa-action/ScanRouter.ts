@@ -35,8 +35,10 @@ export class Router extends KoaRouter {
     private checkAuthPermit (ctx: any, target:any, handler:string):boolean {
         const authorizePermit:boolean = Reflect.getMetadata('ccc:authorizePermit', target, handler);
         if (authorizePermit) {
+            this.app.logger.debug(`controller ${target} ${handler} authorizePermit ${authorizePermit}`);
             return true;
         }
+        this.app.logger.debug(`controller ${target} ${handler} auth ${ctx.auth?.isAuthorized()}`);
         return ctx.auth?.isAuthorized();
     }
 
@@ -116,6 +118,7 @@ export class Router extends KoaRouter {
             if(fs.existsSync(routerDir)){
                 const files:string[] = fs.readdirSync(routerDir);
                 files.forEach((file:string)=>{
+                    this.app.logger.debug(`controller file ${file}`);
                     let fileName:string = path.basename(file, path.extname(file));
                     const module = require(path.resolve(routerDir, fileName));
                     const Clazz = module.default || module;
@@ -127,12 +130,16 @@ export class Router extends KoaRouter {
                         const routes: Route[] = Reflect.getMetadata('ccc:routes', c);
                         routes.forEach((route: Route) => {
                             const currentPath:string = basePath + route.url;
+                            this.app.logger.debug(`register controller url ${currentPath}`);
                             const handler = c[route.handler];
                             const fileds = Reflect.getMetadata('ccc:fileds', c, route.handler);
                             const validates: boolean[] = Reflect.getMetadata('ccc:validates', c, route.handler);
                             const returnType:any = Reflect.getMetadata('design:returntype', c, route.handler);
+                            this.app.logger.debug(`${currentPath} returnType: ${returnType}`);
                             const contentType:string = Reflect.getMetadata('ccc:content-type', c, route.handler);
+                            this.app.logger.debug(`${currentPath} contentType: ${contentType}`);
                             const statusCode:number = Reflect.getMetadata('ccc:status-code', c, route.handler);
+                            this.app.logger.debug(`${currentPath} statusCode: ${statusCode}`);
                             const interceptors = this.app.getInterceptors();
                             let middlewares = [];
                             this.app.koaBody ? middlewares.push(this.app.koaBody) : false;

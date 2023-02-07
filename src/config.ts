@@ -1,4 +1,5 @@
 import { Global } from "../koa-action/Global";
+import path from "node:path";
 
 Global.config = {
     serviceName: 'fqbdService',
@@ -29,5 +30,14 @@ Global.config = {
         redisOptions: {
             db: 2,
         }
+    },
+    logger: {
+        name: 'fqbd',
+        numBackups: 15,
+        pattern: '[%d{yyyy-MM-dd hh:mm:ss}] [pid:%z] [%p] [%C.%M] %c - %m',
+        path: path.resolve(process.cwd(), 'logs', 'logs.log'),
+        level: 'info',
+        pm2: true,
+        pm2InstanceVar: 'INSTANCE_ID'
     }
 };
