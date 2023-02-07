@@ -7,61 +7,69 @@ import { Interceptor } from './Interceptor';
 import { DefaultDataResponse } from './DefaultDataResponse';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { Global } from "./Global";
-import Koa from 'koa';
+import { Log, Config } from "./decorators";
+import { Logger } from 'log4js';
 import path from 'node:path';
+import Koa from 'koa';
 
 export class KoaAction {
     public koa: any
     public router: any
     interceptors: Interceptor[] = [];
     koaBody: any
-    config: ConfigOptions
     dataSource: DataSource
+    @Config
+    config: ConfigOptions
+    @Log()
+    logger: Logger
+    @Log('access')
+    accessLog: Logger
+    @Log('accessError')
+    accessErrorLog: Logger
 
     constructor(public options:any = {}){
         this.options = options;
         this.koa = new Koa();
-        this.init();
+        this._init();
     }
 
     /**
      * 初始化
      * @return {[type]} [description]
      */
-    init(): void {
-        if (!Global.config) {
-            throw new Error('import config to initialize Global.config in the first line');
-        }
-        this.config = Global.config;
+    private _init(): void {
         //初始化错误处理
-        this.initErrors();
+        this._initErrors();
         // 加载中间件
-        this.loadMiddlewares();
+        this._loadMiddlewares();
         // 初始化数据库
-        this.registerDataSource();
+        this._registerDataSource();
     }
 
     /**
      * 初始化错误处理
      * @return {[type]} [description]
      */
-    initErrors(): void {
+    private _initErrors(): void {
         // 监控错误日志
-        this.koa.on('error', function (err: Error, ctx: any) {
+        this.koa.on('error', (err: Error, ctx: any) => {
             // utils.log(err);
             console.error(err);
+            this.logger.error(err);
         });
 
         // 捕获promise reject错误
         process.on('unhandledRejection', (reason: string)=> {
             // utils.log(reason);
             console.error(reason);
+            this.logger.error(reason);
         });
 
         // 捕获未知错误
-        process.on('uncaughtException', function (err: Error) {
+        process.on('uncaughtException', (err: Error) => {
             // utils.log(err);
             console.error(err);
+            this.logger.error(err);
             if (err.message.indexOf(' EADDRINUSE ') > -1) {
                 process.exit();
             }
@@ -79,8 +87,15 @@ export class KoaAction {
     /**
      * 加载基础中间件
      */
-    loadMiddlewares () {
+    private _loadMiddlewares () {
         let root = process.cwd();
+
+        this.use(async (ctx: any, next: any) => {
+            const {url, ip, status, method, host, hostname, protocol} = ctx;
+            await next();
+            this.accessLog.info(`${url} | ${ip} | ${method} | ${status} | ${host} | ${hostname} | ${protocol}`);
+        });
+
         //favicon
         if (this.config.favicon) {
             const favicon = require('koa-favicon');
@@ -129,19 +144,23 @@ export class KoaAction {
      * @return {[type]} [description]
      */
     run(callback?: Function): void {
+        this.logger.debug('start register controllers');
         this.registerControllers();
+        this.logger.debug('start scan interceptors');
         this.scanInterceptors();
         //初始化路由
         this.initRouters();
 
+        const host = this.config.host || '0.0.0.0';
         this.koa.listen({
-            host: this.config.host || '0.0.0.0',
+            host: host,
             port: this.config.port
         },()=>{
             if (callback) {
                 callback.apply(this, arguments);
             }
-            console.log("server listen on " + this.config.port);
+            this.logger.debug('server listen on ' + host + ":" + this.config.port);
+            console.log("server listen on " + host + ":" + this.config.port);
         });
     }
 
@@ -159,6 +178,7 @@ export class KoaAction {
      * 注册controllers
      */
     registerControllers () {
+        this.logger.debug('use koabody ');
         this.koaBody = KoaBody({
             multipart: true,
             formidable: {
@@ -168,14 +188,17 @@ export class KoaAction {
             },
             formLimit: this.config.formLimit
         });
+        this.logger.debug(`route prefix /${this.config.serviceName || ''}`);
         this.router = new Router(this, {
             prefix: `/${this.config.serviceName || ''}`
         });
 
         if (!Reflect.hasMetadata('ccc:scanDirectories', this)) {
+            this.logger.error('starting App class needs to use @ScanPath to specify the controllers directories');
             throw new Error('starting App class needs to use @ScanPath to specify the controllers directories');
         }
         const dirs = Reflect.getMetadata('ccc:scanDirectories', this);
+        this.logger.debug(`controllers directors ${dirs}`);
         this.router.scan(dirs);
     }
 
@@ -185,6 +208,7 @@ export class KoaAction {
      * @returns 
      */
     registerInterceptor(interceptor: Interceptor): any {
+        this.logger.debug(`add interceptor ${interceptor}`);
         this.interceptors.push(interceptor);
         return this;
     }
@@ -197,10 +221,12 @@ export class KoaAction {
     private handlerError (error: any, ctx: any) {
         if (error instanceof HttpError) {
             console.log('httpError...', error);
+            this.logger.error(`[HttpError] ${error}`);
             ctx.status = error.code;
             ctx.body = DefaultDataResponse.failWithCodeMessage(error.code, error.message || error.stack);
         } else {
             console.log('normal Error...', error);
+            this.logger.error(`[NormalError] ${error}`);
             let statusCode = error.status || error.statusCode || 500;
             ctx.status = statusCode;
             ctx.body = DefaultDataResponse.failWithCodeMessage(statusCode, error.message || error.stack);
@@ -231,12 +257,14 @@ export class KoaAction {
      * 注册数据源
      * @param options 
      */
-    async registerDataSource (options?: DataSourceOptions) {
+    private async _registerDataSource (options?: DataSourceOptions) {
         if (options) {
+            this.logger.debug(`datasource config ${options}`);
             this.dataSource = new DataSource(options);
         } else {
             const dsConfig = this.config.dataSource;
             if (dsConfig) {
+                this.logger.debug(`datasource config ${dsConfig}`);
                 this.dataSource = new DataSource(dsConfig);
             }
         }

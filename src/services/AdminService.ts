@@ -60,12 +60,8 @@ export class AdminService {
             return ret;
         }
         password = decrypt(privateKey, password);
-        console.log('解码后的密码: ', password);
         let hashed = md5(user.salt + password, {asBytes: true});
         const loginPassword = crypt.bytesToBase64(md5(hashed, {asBytes: true}));
-        
-        console.log("md5 加密后的password ", loginPassword);
-
         const error: string|null = this.checkLoginError(user, 5, ip);
 
         if (loginPassword !== user.passwordFirst ) {

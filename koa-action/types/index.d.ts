@@ -12,6 +12,16 @@ declare type RedisOptions = {
     db: number
 }
 
+export interface LoggerOptions {
+    name: string,
+    numBackups?: bumber,
+    pattern?: string,
+    path: string,
+    pm2?: boolean,
+    level?: string,
+    pm2InstanceVar?: string
+}
+
 export interface ConfigOptions {
     serviceName?: string,
     host?: string,
@@ -26,5 +36,6 @@ export interface ConfigOptions {
     redisSession: any,
     views?: string,
     redis?: RedisOptions,
-    sessionExp?: number = 30
+    sessionExp?: number = 30,
+    logger?: LoggerOptions
 }

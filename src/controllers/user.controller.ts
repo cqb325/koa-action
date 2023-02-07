@@ -1,10 +1,13 @@
 import { LoginModel } from './../po/LoginModel';
-import { Controller, Get, Post, Param, Headers, Authorization, Auth, Service, ContentType, Body, Status, Context, AuthPermit, Validate, DefaultDataResponse, DataResponse, Request, Session } from "../../koa-action";
+import { Controller, Get, Post, Param, Headers, Authorization, Auth, Log, Service, ContentType, Body, Status, Context, AuthPermit, Validate, DefaultDataResponse, DataResponse, Request, Session } from "../../koa-action";
 import { AdminService } from "../services/AdminService";
 import { Captcha } from "../utils/captcha";
 
 @Controller('/manager/user')
 class AdminController {
+
+    @Log()
+    private log: any
 
     @Service
     private adminService: AdminService;
@@ -12,6 +15,8 @@ class AdminController {
     @ContentType('jpg')
     @Get('/captchaGet')
     async list (@Session session: any):Promise<any> {
+        this.log.info('req: /captchaGet');
+        
         const captcha = new Captcha({width: 100});
         const ret = await captcha.generate();
         

@@ -13,3 +13,4 @@ export * from './AutoRepository';
 export * from './Session';
 export * from './ScanInterceptors';
 export * from './Auth';
+export * from './Log';
