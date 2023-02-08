@@ -4,6 +4,7 @@ import { Logger } from 'log4js';
 
 export class Global {
     static interceptorsDirectories: string[]
+    static aspectsDirectories: string[]
     static config: ConfigOptions
     static beans: Map<any, any> =  new Map();
     static dataSource: DataSource
