@@ -12,5 +12,7 @@ export * from './Validate';
 export * from './AutoRepository';
 export * from './Session';
 export * from './ScanInterceptors';
+export * from './ScanAspects';
 export * from './Auth';
 export * from './Log';
+export * from './Aop';

@@ -10,6 +10,7 @@ import { Global } from "./Global";
 import { Log, Config } from "./decorators";
 import { Logger } from 'log4js';
 import path from 'node:path';
+import fs from 'node:fs';
 import Koa from 'koa';
 
 export class KoaAction {
@@ -44,6 +45,8 @@ export class KoaAction {
         this._loadMiddlewares();
         // 初始化数据库
         this._registerDataSource();
+        // 初始化切面
+        this._scanAspects();
     }
 
     /**
@@ -285,6 +288,30 @@ export class KoaAction {
 
             scanor.interceptors.forEach(interceptorModule => {
                 this.registerInterceptor(interceptorModule);
+            });
+        }
+        return this;
+    }
+
+    /**
+     * 处理切面
+     */
+    private _scanAspects (): KoaAction {
+        if (Global.aspectsDirectories && Global.aspectsDirectories.length) {
+            let dirs = Global.aspectsDirectories;
+            dirs.forEach((dir: string) => {
+                let moduleDir:string = path.join(process.cwd(), dir);
+                try {
+                    if(fs.existsSync(moduleDir)){
+                        const files:string[] = fs.readdirSync(moduleDir);
+                        files.forEach((file:string)=>{
+                            let fileName:string = path.basename(file, path.extname(file));
+                            require(path.resolve(moduleDir, fileName));
+                        });
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
             });
         }
         return this;

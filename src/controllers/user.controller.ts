@@ -4,7 +4,7 @@ import { AdminService } from "../services/AdminService";
 import { Captcha } from "../utils/captcha";
 
 @Controller('/manager/user')
-class AdminController {
+export default class UserController {
 
     @Log()
     private log: any
@@ -91,5 +91,3 @@ class AdminController {
         return DefaultDataResponse.ok(user);
     }
 }
-
-export default AdminController;
