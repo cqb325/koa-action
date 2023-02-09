@@ -40,7 +40,8 @@ export function Log(name?: string): PropertyDecorator {
             },
             categories: {
                 default: { appenders: [Global.config.logger.name], level: Global.config.logger.level || 'info', enableCallStack: true },
-                access: { appenders: ['access', 'accessError'], level: 'debug'}
+                access: { appenders: ['access'], level: 'debug'},
+                accessError: { appenders: ['accessError'], level: 'debug'}
             },
             pm2: Global.config.logger.pm2,
             pm2InstanceVar: Global.config.logger.pm2InstanceVar
