@@ -9,6 +9,7 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { Global } from "./Global";
 import { Log, Config } from "./decorators";
 import { Logger } from 'log4js';
+import { ModuleScanner } from './ModuleScanner';
 import path from 'node:path';
 import fs from 'node:fs';
 import Koa from 'koa';
@@ -94,9 +95,13 @@ export class KoaAction {
         let root = process.cwd();
 
         this.use(async (ctx: any, next: any) => {
-            const {url, ip, status, method, host, hostname, protocol} = ctx;
             await next();
-            this.accessLog.info(`${url} | ${ip} | ${method} | ${status} | ${host} | ${hostname} | ${protocol}`);
+            const {url, ip, status, method, host, hostname, protocol} = ctx;
+            if (parseInt(status) >= 300) {
+                this.accessErrorLog.error(`${url} | ${ip} | ${method} | ${status} | ${host} | ${hostname} | ${protocol}`);
+            } else {
+                this.accessLog.info(`${url} | ${ip} | ${method} | ${status} | ${host} | ${hostname} | ${protocol}`);
+            }
         });
 
         //favicon
@@ -283,12 +288,10 @@ export class KoaAction {
     private scanInterceptors () {
         if (Global.interceptorsDirectories && Global.interceptorsDirectories.length) {
             let dirs = Global.interceptorsDirectories;
-            const scanor = new ScanInterceptor(dirs);
-            scanor.scan();
-
-            scanor.interceptors.forEach(interceptorModule => {
+            const scanner = new ModuleScanner(process.cwd(), dirs, (interceptorModule: any) => {
                 this.registerInterceptor(interceptorModule);
             });
+            scanner.scan();
         }
         return this;
     }
@@ -299,20 +302,8 @@ export class KoaAction {
     private _scanAspects (): KoaAction {
         if (Global.aspectsDirectories && Global.aspectsDirectories.length) {
             let dirs = Global.aspectsDirectories;
-            dirs.forEach((dir: string) => {
-                let moduleDir:string = path.join(process.cwd(), dir);
-                try {
-                    if(fs.existsSync(moduleDir)){
-                        const files:string[] = fs.readdirSync(moduleDir);
-                        files.forEach((file:string)=>{
-                            let fileName:string = path.basename(file, path.extname(file));
-                            require(path.resolve(moduleDir, fileName));
-                        });
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
-            });
+            const aspectsScanner = new ModuleScanner(process.cwd(), dirs, () => {});
+            aspectsScanner.scan();
         }
         return this;
     }

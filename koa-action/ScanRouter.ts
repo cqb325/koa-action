@@ -5,6 +5,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { ForbiddenError } from "./errors/ForbiddenError";
 import { RequestParamInvalidError } from './errors/RequestParamInvalidError';
+import { ModuleScanner } from './ModuleScanner';
 const KoaRouter = require('@koa/router');
 
 export class Router extends KoaRouter {
@@ -16,22 +17,19 @@ export class Router extends KoaRouter {
     }
 
     scan (scanDir:string[]): void {
-        let dirs;
-        if (scanDir) {
-            dirs = scanDir;
-        } else {
-            dirs = this.app.config.controllers;
-        }
-        
-        if (typeof dirs === 'string') {
-            this.doScanControllers(dirs, this);
-        } else {
-            dirs.forEach((cur: string) => {
-                this.doScanControllers(cur, this);
-            });
-        }
+        const scanner = new ModuleScanner(process.cwd(), scanDir, (Module: any) => {
+            this.handleController(Module);
+        });
+        scanner.scan();
     }
 
+    /**
+     * 校验权限
+     * @param ctx 
+     * @param target 
+     * @param handler 
+     * @returns 
+     */
     private checkAuthPermit (ctx: any, target:any, handler:string):boolean {
         const authorizePermit:boolean = Reflect.getMetadata('ccc:authorizePermit', target, handler);
         if (authorizePermit) {
@@ -112,65 +110,59 @@ export class Router extends KoaRouter {
         }
     }
 
-    doScanControllers (dir: string, router: Router): void {
-        let routerDir:string = path.join(process.cwd(), dir);
+    /**
+     * 处理Controller
+     * @param Clazz 
+     */
+    handleController (Clazz: any): void {
         try {
-            if(fs.existsSync(routerDir)){
-                const files:string[] = fs.readdirSync(routerDir);
-                files.forEach((file:string)=>{
-                    this.app.logger.debug(`controller file ${file}`);
-                    let fileName:string = path.basename(file, path.extname(file));
-                    const module = require(path.resolve(routerDir, fileName));
-                    const Clazz = module.default || module;
-                    const c = new Clazz();
-                    const isController:boolean = Reflect.hasMetadata('ccc:rootPath', Clazz);
-                    const hasRoutes:boolean = Reflect.hasMetadata('ccc:routes', c);
-                    if (isController && hasRoutes) {
-                        const basePath: string = Reflect.getMetadata('ccc:rootPath', Clazz);
-                        const routes: Route[] = Reflect.getMetadata('ccc:routes', c);
-                        routes.forEach((route: Route) => {
-                            const currentPath:string = basePath + route.url;
-                            this.app.logger.debug(`register controller url ${currentPath}`);
-                            const handler = c[route.handler];
-                            const fileds = Reflect.getMetadata('ccc:fileds', c, route.handler);
-                            const validates: boolean[] = Reflect.getMetadata('ccc:validates', c, route.handler);
-                            const returnType:any = Reflect.getMetadata('design:returntype', c, route.handler);
-                            this.app.logger.debug(`${currentPath} returnType: ${returnType}`);
-                            const contentType:string = Reflect.getMetadata('ccc:content-type', c, route.handler);
-                            this.app.logger.debug(`${currentPath} contentType: ${contentType}`);
-                            const statusCode:number = Reflect.getMetadata('ccc:status-code', c, route.handler);
-                            this.app.logger.debug(`${currentPath} statusCode: ${statusCode}`);
-                            const interceptors = this.app.getInterceptors();
-                            let middlewares = [];
-                            this.app.koaBody ? middlewares.push(this.app.koaBody) : false;
-                            middlewares = middlewares.concat(interceptors);
-                            router[route.method](currentPath, ...middlewares, async (ctx: any, next: any) => {
-                                try {
-                                    if (!this.checkAuthPermit(ctx, c, route.handler)) {
-                                        this.app.handlerError(new ForbiddenError(ctx), ctx);
-                                        return;
-                                    }
-                                    const args: any[] = this.buildHandleArguments(ctx, c, fileds);
-                                    // 校验
-                                    await this.validateFields(args, validates);
-                                    const data = await handler.apply(c, args);
-                                    if (statusCode) {
-                                        ctx.status = statusCode;
-                                    }
-                                    if (returnType && data !== undefined) {
-                                        ctx.body = data;
-                                    }
-                                    if (contentType) {
-                                        ctx.type = contentType;
-                                    }
-                                } catch (e: any) {
-                                    this.app.handlerError(e, ctx);
-                                } finally {
-                                    await next();
-                                }
-                            });
-                        });
-                    }
+            const c = new Clazz();
+            const isController:boolean = Reflect.hasMetadata('ccc:rootPath', Clazz);
+            const hasRoutes:boolean = Reflect.hasMetadata('ccc:routes', c);
+            if (isController && hasRoutes) {
+                const basePath: string = Reflect.getMetadata('ccc:rootPath', Clazz);
+                const routes: Route[] = Reflect.getMetadata('ccc:routes', c);
+                routes.forEach((route: Route) => {
+                    const currentPath:string = basePath + route.url;
+                    this.app.logger.debug(`register controller url ${currentPath}`);
+                    const handler = c[route.handler];
+                    const fileds = Reflect.getMetadata('ccc:fileds', c, route.handler);
+                    const validates: boolean[] = Reflect.getMetadata('ccc:validates', c, route.handler);
+                    const returnType:any = Reflect.getMetadata('design:returntype', c, route.handler);
+                    this.app.logger.debug(`${currentPath} returnType: ${returnType}`);
+                    const contentType:string = Reflect.getMetadata('ccc:content-type', c, route.handler);
+                    this.app.logger.debug(`${currentPath} contentType: ${contentType}`);
+                    const statusCode:number = Reflect.getMetadata('ccc:status-code', c, route.handler);
+                    this.app.logger.debug(`${currentPath} statusCode: ${statusCode}`);
+                    const interceptors = this.app.getInterceptors();
+                    let middlewares = [];
+                    this.app.koaBody ? middlewares.push(this.app.koaBody) : false;
+                    middlewares = middlewares.concat(interceptors);
+                    this[route.method](currentPath, ...middlewares, async (ctx: any, next: any) => {
+                        try {
+                            if (!this.checkAuthPermit(ctx, c, route.handler)) {
+                                this.app.handlerError(new ForbiddenError(ctx), ctx);
+                                return;
+                            }
+                            const args: any[] = this.buildHandleArguments(ctx, c, fileds);
+                            // 校验
+                            await this.validateFields(args, validates);
+                            const data = await handler.apply(c, args);
+                            if (statusCode) {
+                                ctx.status = statusCode;
+                            }
+                            if (returnType && data !== undefined) {
+                                ctx.body = data;
+                            }
+                            if (contentType) {
+                                ctx.type = contentType;
+                            }
+                        } catch (e: any) {
+                            this.app.handlerError(e, ctx);
+                        } finally {
+                            await next();
+                        }
+                    });
                 });
             }
         } catch (e: any) {
