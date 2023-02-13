@@ -1,4 +1,3 @@
-import { ScanInterceptor } from './ScanInterceptor';
 import { HttpError } from './errors/HttpError';
 import { Router } from './ScanRouter';
 import { ConfigOptions } from './types/index';
@@ -11,7 +10,6 @@ import { Log, Config } from "./decorators";
 import { Logger } from 'log4js';
 import { ModuleScanner } from './ModuleScanner';
 import path from 'node:path';
-import fs from 'node:fs';
 import Koa from 'koa';
 
 export class KoaAction {

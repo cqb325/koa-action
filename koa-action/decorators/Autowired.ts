@@ -1,6 +1,9 @@
 import { Global } from "../Global";
 export function Autowired (target: any, propertyKey: any): void {
     const Type = Reflect.getMetadata('design:type', target, propertyKey);
+    if (Type.name === 'DataSource' && !Global.beans.has(Type)) {
+        Global.beans.set(Type, Global.dataSource);
+    }
     if (!Global.beans.has(Type)) {
         Global.beans.set(Type, new Type());
     }
