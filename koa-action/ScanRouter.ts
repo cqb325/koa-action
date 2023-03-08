@@ -1,3 +1,4 @@
+import { Aspect, Global, PointCut } from './Global';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
 import { Route } from "./types/index";
@@ -126,6 +127,20 @@ export class Router extends KoaRouter {
                     const currentPath:string = basePath + route.url;
                     this.app.logger.debug(`register controller url ${currentPath}`);
                     const handler = c[route.handler];
+                    const proxyHandler = new Proxy(handler, {
+                        apply (method, ctx, argArray) {
+                            // method 是否存在aspect
+                            const pointCuts: PointCut[] = Reflect.getMetadata('ccc:pointcuts', ctx, method.name);
+                            if (pointCuts) {
+                                // 暂时只允许一个aspect
+                                const pointCut:PointCut = pointCuts[0];
+                                const aspect: Aspect | undefined = Global.aspects.get(pointCut.key);
+                                return aspect?.advice(ctx, method, argArray, aspect, pointCut.data);
+                            }
+                            
+                            return Reflect.apply(method, ctx, argArray);
+                        }
+                    });
                     const fileds = Reflect.getMetadata('ccc:fileds', c, route.handler);
                     const validates: boolean[] = Reflect.getMetadata('ccc:validates', c, route.handler);
                     const returnType:any = Reflect.getMetadata('design:returntype', c, route.handler);
@@ -147,7 +162,7 @@ export class Router extends KoaRouter {
                             const args: any[] = this.buildHandleArguments(ctx, c, fileds);
                             // 校验
                             await this.validateFields(args, validates);
-                            const data = await handler.apply(c, args);
+                            const data = await proxyHandler.apply(c, args);
                             if (statusCode) {
                                 ctx.status = statusCode;
                             }

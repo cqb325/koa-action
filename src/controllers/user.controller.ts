@@ -2,6 +2,7 @@ import { LoginModel } from './../po/LoginModel';
 import { Controller, Get, Post, Param, Headers, Authorization, Auth, Log, Service, ContentType, Body, Status, Context, AuthPermit, Validate, DefaultDataResponse, DataResponse, Request, Session } from "../../koa-action";
 import { AdminService } from "../services/AdminService";
 import { Captcha } from "../utils/captcha";
+import { SysLog } from '../aspects/SysLog';
 
 @Controller('/manager/user')
 export default class UserController {
@@ -14,6 +15,7 @@ export default class UserController {
     
     @ContentType('jpg')
     @Get('/captchaGet')
+    @SysLog("验证码")
     async list (@Session session: any):Promise<any> {
         this.log.info('req: /captchaGet');
         
