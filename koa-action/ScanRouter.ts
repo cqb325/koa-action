@@ -54,6 +54,9 @@ export class Router extends KoaRouter {
                 if (field.type === 'param') {
                     args[field.index] = ctx.request.query[field.name] || ctx.params[field.name];
                 }
+                if (field.type === 'file') {
+                    args[field.index] = ctx.request.files[field.name];
+                }
                 if (field.type === 'req') {
                     args[field.index] = ctx.req;
                 }

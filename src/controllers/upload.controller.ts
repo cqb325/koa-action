@@ -1,4 +1,4 @@
-import { Context, Controller, Get, Log, Param, Post } from "../../koa-action";
+import { Context, Controller, File, Get, Log, Param, Post } from "../../koa-action";
 import path from "node:path";
 import fs from "node:fs";
 const mkdirp = require('mkdirp');
@@ -9,9 +9,7 @@ export default class UserController {
     private log: any
 
     @Post('/upload/:dir')
-    async upload (@Context ctx: any, @Param('dir') dir: string):Promise<any> {
-
-        const file = ctx.request.files.file;
+    async upload (@File("file") file: any, @Param('dir') dir: string):Promise<any> {
         if (file) {
             const filePath = file.filepath;
             const name = file.originalFilename;
