@@ -52,7 +52,7 @@ export class Router extends KoaRouter {
         if (fileds && fileds.length) {
             fileds.forEach((field:any) => {
                 if (field.type === 'param') {
-                    args[field.index] = ctx.request.query[field.name];
+                    args[field.index] = ctx.request.query[field.name] || ctx.params[field.name];
                 }
                 if (field.type === 'req') {
                     args[field.index] = ctx.req;
