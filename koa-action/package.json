@@ -1,6 +1,6 @@
 {
   "name": "koa-action",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "web framework for koa2",
   "main": "index.ts",
   "scripts": {
