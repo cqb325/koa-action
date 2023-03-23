@@ -31,21 +31,27 @@ yarn add koa-action
 ### index.ts
 	
 	import './config';
-	import { KoaAction, ScanPath } from '../koa-action';
+	import { KoaAction, ScanPath, Log, ScanAspects } from '../koa-action';
 	import { AuthInterceptor } from './interceptors/AuthInterceptor';
 
 	@ScanPath('./src/controllers')
+	@ScanAspects('./src/aspects')
 	class Service extends KoaAction{
+		@Log()
+		private log: any;
+
 		constructor () {
 			super();
+
+			this.init();
+		}
+
+		init () {
+			this.registerInterceptor(new AuthInterceptor())
+				.run();
 		}
 	}
 	const s = new Service();
-	s.use(async (ctx: any, next: any) => {
-		console.log(ctx.request.url);
-		await next();
-	});
-	s.registerInterceptor(new AuthInterceptor()).run();
 
 	//run
 	npm run dev
@@ -56,8 +62,9 @@ yarn add koa-action
 	import { Global } from "../koa-action/Global";
 
 	Global.config = {
-		serviceName: 'fqbdService',
+		serviceName: 'xxx',
 		port: 18080,
+		upload: 'uploads',
 		dataSource: {
 			type: "mysql",
 			host: "172.21.46.186",
@@ -77,13 +84,17 @@ yarn add koa-action
 			db: 2
 		},
 		redisSession: {
-			sessionOptions: {
-				key: 'ka.sid',
-				ttl: 5 * 60 * 1000  // 5分钟
-			},
-			redisOptions: {
-				db: 2,
-			}
+			key: 'ka.sid',
+			ttl: 5 * 60 * 1000  // 5分钟
+		},
+		logger: {
+			name: 'fqbd',
+			numBackups: 15,
+			pattern: '[%d{yyyy-MM-dd hh:mm:ss}] [pid:%z] [%p] [%C.%M] %c - %m',
+			path: path.resolve(process.cwd(), 'logs', 'logs.log'),
+			level: 'info',
+			pm2: true,
+			pm2InstanceVar: 'INSTANCE_ID'
 		}
 	};
 
@@ -97,6 +108,12 @@ yarn add koa-action
 	@ScanPath('./src/controllers')
 	class Service extends KoaAction{}
 
+### @ScanAspects('path')
+类装饰器 指定AOP路径
+
+	@ScanAspects('./src/aspects')
+	class Service extends KoaAction{}
+
 ### @Controller('/path')
 类装饰器 指定模块路由
 
@@ -108,6 +125,12 @@ yarn add koa-action
 
 	@Service
     private adminService: AdminService;
+
+### @Log()
+属性装饰器 注入日志，对应的对象只初始化一次
+
+	@Log()
+    private log: any;
 
 ### @Autowired
 属性装饰器 注入该类型的对象，对应的对象只初始化一次， 无传值
@@ -168,6 +191,12 @@ yarn add koa-action
 
 	@Post('/login')
     async login (@Body user: User, @Context ctx: any):Promise<DataResponse> {}
+
+### @File
+属性装饰器 获取上传文件参数
+
+	@Post('/upload')
+    async upload (@File('file') file: any, @Context ctx: any):Promise<DataResponse> {}
 
 ### @Request
 属性装饰器 获取ctx.request对象
