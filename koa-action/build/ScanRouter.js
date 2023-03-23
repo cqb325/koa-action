@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Router = void 0;
+const Global_1 = require("./Global");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const ForbiddenError_1 = require("./errors/ForbiddenError");
@@ -46,7 +47,10 @@ class Router extends KoaRouter {
         if (fileds && fileds.length) {
             fileds.forEach((field) => {
                 if (field.type === 'param') {
-                    args[field.index] = ctx.request.query[field.name];
+                    args[field.index] = ctx.request.query[field.name] || ctx.params[field.name];
+                }
+                if (field.type === 'file') {
+                    args[field.index] = ctx.request.files[field.name];
                 }
                 if (field.type === 'req') {
                     args[field.index] = ctx.req;
@@ -119,6 +123,19 @@ class Router extends KoaRouter {
                     const currentPath = basePath + route.url;
                     this.app.logger.debug(`register controller url ${currentPath}`);
                     const handler = c[route.handler];
+                    const proxyHandler = new Proxy(handler, {
+                        apply(method, ctx, argArray) {
+                            // method 是否存在aspect
+                            const pointCuts = Reflect.getMetadata('ccc:pointcuts', ctx, method.name);
+                            if (pointCuts) {
+                                // 暂时只允许一个aspect
+                                const pointCut = pointCuts[0];
+                                const aspect = Global_1.Global.aspects.get(pointCut.key);
+                                return aspect === null || aspect === void 0 ? void 0 : aspect.advice(ctx, method, argArray, aspect, pointCut.data);
+                            }
+                            return Reflect.apply(method, ctx, argArray);
+                        }
+                    });
                     const fileds = Reflect.getMetadata('ccc:fileds', c, route.handler);
                     const validates = Reflect.getMetadata('ccc:validates', c, route.handler);
                     const returnType = Reflect.getMetadata('design:returntype', c, route.handler);
@@ -140,7 +157,7 @@ class Router extends KoaRouter {
                             const args = this.buildHandleArguments(ctx, c, fileds);
                             // 校验
                             await this.validateFields(args, validates);
-                            const data = await handler.apply(c, args);
+                            const data = await proxyHandler.apply(c, args);
                             if (statusCode) {
                                 ctx.status = statusCode;
                             }

@@ -4,6 +4,9 @@ exports.Autowired = void 0;
 const Global_1 = require("../Global");
 function Autowired(target, propertyKey) {
     const Type = Reflect.getMetadata('design:type', target, propertyKey);
+    if (Type.name === 'DataSource' && !Global_1.Global.beans.has(Type)) {
+        Global_1.Global.beans.set(Type, Global_1.Global.dataSource);
+    }
     if (!Global_1.Global.beans.has(Type)) {
         Global_1.Global.beans.set(Type, new Type());
     }

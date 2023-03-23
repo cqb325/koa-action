@@ -114,8 +114,8 @@ class KoaAction {
             this.koa.keys = ['koa-action', 'koa2'];
             const session = require('koa-generic-session');
             const redisStore = require('koa-redis');
-            const ops = this.config.redisSession.sessionOptions || {};
-            ops.store = redisStore(this.config.redisSession.redisOptions || {});
+            const ops = this.config.redisSession || {};
+            ops.store = redisStore(this.config.redis || {});
             this.use(session(ops));
         }
         // views
@@ -254,8 +254,10 @@ class KoaAction {
                 this.dataSource = new typeorm_1.DataSource(dsConfig);
             }
         }
-        Global_1.Global.dataSource = this.dataSource;
-        await this.dataSource.initialize();
+        if (this.dataSource) {
+            Global_1.Global.dataSource = this.dataSource;
+            await this.dataSource.initialize();
+        }
         return this;
     }
     /**

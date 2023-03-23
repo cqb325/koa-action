@@ -1,84 +1,75 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Around = exports.AfterThrow = exports.AfterReturn = exports.After = exports.Before = exports.Aspect = void 0;
-let findPointCut = (target, pointCut) => {
-    if (typeof pointCut === 'string') {
-        let func = target.prototype[pointCut];
-        // 暂不支持属性的aop
-        if (typeof func === 'function') {
-            return func;
+const Global_1 = require("../Global");
+const advice = async function (target, method, args, aspect, customData) {
+    if (method) {
+        let self = aspect.target;
+        let joinPoint = {
+            target: target,
+            method: method.name,
+            args,
+            data: customData
+        };
+        // 前置增强
+        aspect.before && aspect.before.call(self, joinPoint);
+        // 环绕增强
+        let roundJoinPoint = joinPoint;
+        if (aspect.around) {
+            roundJoinPoint = Object.assign(joinPoint, {
+                handle: () => {
+                    return Reflect.apply(method, target, args);
+                }
+            });
+        }
+        else {
+            // 没有声明round增强,直接执行原方法
+            aspect.around = () => {
+                return Reflect.apply(method, target, args);
+            };
+        }
+        if (aspect.after || aspect.afterReturn || aspect.afterThrow) {
+            let result = null;
+            let error = null;
+            try {
+                result = await aspect.around.call(self, roundJoinPoint);
+                // 返回增强
+                return aspect.afterReturn && aspect.afterReturn.call(self, joinPoint, result) || result;
+            }
+            catch (e) {
+                error = e;
+                // 异常增强
+                let shouldIntercept = aspect.afterThrow && aspect.afterThrow.call(self, joinPoint, e);
+                if (!shouldIntercept) {
+                    throw e;
+                }
+            }
+            finally {
+                // 后置增强
+                aspect.after && aspect.after.call(self, joinPoint, result, error);
+            }
+        }
+        else {
+            // 未定义任何后置增强,直接执行原方法
+            return aspect.around.call(self, roundJoinPoint);
         }
     }
-    // 暂不支持模糊匹配切点
-    return null;
 };
-function Aspect(targets) {
+function Aspect(identity) {
     return function (target) {
         let before = Reflect.getMetadata('ccc:aop:before', target);
         let around = Reflect.getMetadata('ccc:aop:around', target);
         let after = Reflect.getMetadata('ccc:aop:after', target);
         let afterReturn = Reflect.getMetadata('ccc:aop:afterreturn', target);
         let afterThrow = Reflect.getMetadata('ccc:aop:afterthrow', target);
-        console.log(before);
-        targets.forEach(targetType => {
-            targetType.pointCuts && targetType.pointCuts.forEach((pointCut) => {
-                let old = findPointCut(targetType.type, pointCut);
-                console.log(old);
-                if (old) {
-                    targetType.type.prototype[pointCut] = async function () {
-                        let self = this;
-                        let args = arguments;
-                        let joinPoint = {
-                            target: targetType.type,
-                            method: old,
-                            args,
-                            self
-                        };
-                        // 前置增强
-                        before && before.call(self, joinPoint);
-                        // 环绕增强
-                        let roundJoinPoint = joinPoint;
-                        if (around) {
-                            roundJoinPoint = Object.assign(joinPoint, {
-                                handle: () => {
-                                    return old.apply(self, args);
-                                }
-                            });
-                        }
-                        else {
-                            // 没有声明round增强,直接执行原方法
-                            around = () => {
-                                return old.apply(self, args);
-                            };
-                        }
-                        if (after || afterReturn || afterThrow) {
-                            let result = null;
-                            let error = null;
-                            try {
-                                result = await around.call(self, roundJoinPoint);
-                                // 返回增强
-                                return afterReturn && afterReturn.call(self, joinPoint, result) || result;
-                            }
-                            catch (e) {
-                                error = e;
-                                // 异常增强
-                                let shouldIntercept = afterThrow && afterThrow.call(self, joinPoint, e);
-                                if (!shouldIntercept) {
-                                    throw e;
-                                }
-                            }
-                            finally {
-                                // 后置增强
-                                after && after.call(self, joinPoint, result, error);
-                            }
-                        }
-                        else {
-                            // 未定义任何后置增强,直接执行原方法
-                            return around.call(self, roundJoinPoint);
-                        }
-                    };
-                }
-            });
+        Global_1.Global.aspects.set(identity, {
+            target,
+            before,
+            around,
+            after,
+            afterReturn,
+            afterThrow,
+            advice
         });
     };
 }

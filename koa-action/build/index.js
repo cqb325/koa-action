@@ -27,3 +27,4 @@ __exportStar(require("./Authorization"), exports);
 __exportStar(require("./BaseController"), exports);
 __exportStar(require("./Interceptor"), exports);
 __exportStar(require("./redis"), exports);
+__exportStar(require("./IPageHelper"), exports);
