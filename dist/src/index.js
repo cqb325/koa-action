@@ -9,18 +9,26 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const AuthInterceptor_1 = require("./interceptors/AuthInterceptor");
+require("./config");
 const koa_action_1 = require("../koa-action");
+const AuthInterceptor_1 = require("./interceptors/AuthInterceptor");
 let Service = class Service extends koa_action_1.KoaAction {
     constructor() {
         super();
-        this.registerDataSource();
+        this.init();
+    }
+    init() {
+        this.registerInterceptor(new AuthInterceptor_1.AuthInterceptor())
+            .run();
     }
 };
+__decorate([
+    (0, koa_action_1.Log)(),
+    __metadata("design:type", Object)
+], Service.prototype, "log", void 0);
 Service = __decorate([
     (0, koa_action_1.ScanPath)('./src/controllers'),
-    (0, koa_action_1.Config)('./src/config.ts'),
+    (0, koa_action_1.ScanAspects)('./src/aspects'),
     __metadata("design:paramtypes", [])
 ], Service);
 const s = new Service();
-s.registerInterceptor(new AuthInterceptor_1.AuthInterceptor({ secret: 'shared-secret' })).run();

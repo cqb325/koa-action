@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Cookies = exports.Cookie = exports.Context = exports.Body = exports.Headers = exports.Response = exports.Request = exports.Param = void 0;
+exports.Cookies = exports.Cookie = exports.Context = exports.Body = exports.Headers = exports.Response = exports.Request = exports.File = exports.Param = void 0;
 function Param(name) {
     return function (target, key, paramIndex) {
         if (!Reflect.hasMetadata('ccc:fileds', target, key)) {
@@ -15,6 +15,20 @@ function Param(name) {
     };
 }
 exports.Param = Param;
+function File(name) {
+    return function (target, key, paramIndex) {
+        if (!Reflect.hasMetadata('ccc:fileds', target, key)) {
+            Reflect.defineMetadata('ccc:fileds', [], target, key);
+        }
+        const fileds = Reflect.getMetadata('ccc:fileds', target, key);
+        fileds[paramIndex] = {
+            type: 'file',
+            name,
+            index: paramIndex
+        };
+    };
+}
+exports.File = File;
 function Request(target, key, paramIndex) {
     if (!Reflect.hasMetadata('ccc:fileds', target, key)) {
         Reflect.defineMetadata('ccc:fileds', [], target, key);
