@@ -126,8 +126,8 @@ export class KoaAction {
             const session = require('koa-generic-session');
             const redisStore = require('koa-redis');
 
-            const ops = this.config.redisSession.sessionOptions || {};
-            ops.store = redisStore(this.config.redisSession.redisOptions || {});
+            const ops = this.config.redisSession || {};
+            ops.store = redisStore(this.config.redis || {});
             
             this.use(session(ops));
         }
@@ -274,8 +274,10 @@ export class KoaAction {
                 this.dataSource = new DataSource(dsConfig);
             }
         }
-        Global.dataSource = this.dataSource;
-        await this.dataSource.initialize();
+        if (this.dataSource) {
+            Global.dataSource = this.dataSource;
+            await this.dataSource.initialize();
+        }
         return this;
     }
 

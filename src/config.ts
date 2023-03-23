@@ -24,13 +24,8 @@ Global.config = {
         db: 2
     },
     redisSession: {
-        sessionOptions: {
-            key: 'ka.sid',
-            ttl: 5 * 60 * 1000  // 5分钟
-        },
-        redisOptions: {
-            db: 2,
-        }
+        key: 'ka.sid',
+        ttl: 5 * 60 * 1000  // 5分钟
     },
     logger: {
         name: 'fqbd',
