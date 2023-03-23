@@ -1,4 +1,3 @@
-import { ScanInterceptor } from './ScanInterceptor';
 import { HttpError } from './errors/HttpError';
 import { Router } from './ScanRouter';
 import { ConfigOptions } from './types/index';
@@ -11,7 +10,6 @@ import { Log, Config } from "./decorators";
 import { Logger } from 'log4js';
 import { ModuleScanner } from './ModuleScanner';
 import path from 'node:path';
-import fs from 'node:fs';
 import Koa from 'koa';
 
 export class KoaAction {
@@ -128,8 +126,8 @@ export class KoaAction {
             const session = require('koa-generic-session');
             const redisStore = require('koa-redis');
 
-            const ops = this.config.redisSession.sessionOptions || {};
-            ops.store = redisStore(this.config.redisSession.redisOptions || {});
+            const ops = this.config.redisSession || {};
+            ops.store = redisStore(this.config.redis || {});
             
             this.use(session(ops));
         }
@@ -276,8 +274,10 @@ export class KoaAction {
                 this.dataSource = new DataSource(dsConfig);
             }
         }
-        Global.dataSource = this.dataSource;
-        await this.dataSource.initialize();
+        if (this.dataSource) {
+            Global.dataSource = this.dataSource;
+            await this.dataSource.initialize();
+        }
         return this;
     }
 

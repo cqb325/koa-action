@@ -28,8 +28,8 @@ class Captcha {
         ctx.strokeRect(0, 0, this.options.canvasWidth, this.options.canvasHeight);
         ctx.fillStyle = this.options.color;
         ctx.lineWidth = this.options.lineWidth;
-        (0, canvas_1.registerFont)(this.options.fontPath, { family: 'enFont' });
-        ctx.font = 'normal normal ' + this.options.fontSize + 'px enFont';
+        // registerFont(this.options.fontPath, {family: 'enFont'});
+        ctx.font = 'normal normal ' + this.options.fontSize + 'px ';
         ctx.strokeStyle = 'grey';
         for (var i = 0; i < 3; i++) {
             ctx.moveTo(10, Math.random() * this.options.canvasHeight);

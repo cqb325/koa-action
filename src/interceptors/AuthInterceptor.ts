@@ -32,7 +32,8 @@ export class AuthInterceptor extends BaseInterceptor {
         const parsedUrl = url.parse(ctx.url);
 
         const needAuth = this.antInit().sameOrign(ctx)
-            .antMatchers('/manager/user/captchaGet', '/manager/user/getLoginPublicKey', '/manager/user/login').permitAll(parsedUrl.pathname);
+            .antMatchers('/manager/user/captchaGet', '/manager/user/getLoginPublicKey', '/manager/user/login')
+            .antMatchers('/file/(.*)').permitAll(parsedUrl.pathname);
         console.log(needAuth);
         
         if (needAuth) {

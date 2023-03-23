@@ -12,6 +12,20 @@ export function Param (name:string): ParameterDecorator {
     };
 }
 
+export function File (name:string): ParameterDecorator {
+    return function (target:any, key:any, paramIndex: number) {
+        if (!Reflect.hasMetadata('ccc:fileds', target, key)) {
+            Reflect.defineMetadata('ccc:fileds', [], target, key);
+        }
+        const fileds = Reflect.getMetadata('ccc:fileds', target, key);
+        fileds[paramIndex] = {
+            type: 'file',
+            name,
+            index: paramIndex
+        };
+    };
+}
+
 export function Request (target:any, key:any, paramIndex: number) {
     if (!Reflect.hasMetadata('ccc:fileds', target, key)) {
         Reflect.defineMetadata('ccc:fileds', [], target, key);

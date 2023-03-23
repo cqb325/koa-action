@@ -11,4 +11,5 @@ export * from './Authorization';
 export * from './BaseController';
 export * from './Interceptor';
 export * from './redis';
+export * from './IPageHelper';
 export { ConfigOptions, Route } from './types/index.d';

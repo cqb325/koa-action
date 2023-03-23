@@ -4,6 +4,7 @@ import path from "node:path";
 Global.config = {
     serviceName: 'fqbdService',
     port: 18080,
+    upload: 'uploads',
     dataSource: {
         type: "mysql",
         host: "172.21.46.186",
@@ -23,13 +24,8 @@ Global.config = {
         db: 2
     },
     redisSession: {
-        sessionOptions: {
-            key: 'ka.sid',
-            ttl: 5 * 60 * 1000  // 5分钟
-        },
-        redisOptions: {
-            db: 2,
-        }
+        key: 'ka.sid',
+        ttl: 5 * 60 * 1000  // 5分钟
     },
     logger: {
         name: 'fqbd',

@@ -1,15 +1,12 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Router = void 0;
+const Global_1 = require("./Global");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
-const node_path_1 = __importDefault(require("node:path"));
-const node_fs_1 = __importDefault(require("node:fs"));
 const ForbiddenError_1 = require("./errors/ForbiddenError");
 const RequestParamInvalidError_1 = require("./errors/RequestParamInvalidError");
+const ModuleScanner_1 = require("./ModuleScanner");
 const KoaRouter = require('@koa/router');
 class Router extends KoaRouter {
     constructor(app, ops) {
@@ -17,29 +14,27 @@ class Router extends KoaRouter {
         this.app = app;
     }
     scan(scanDir) {
-        let dirs;
-        if (scanDir) {
-            dirs = scanDir;
-        }
-        else {
-            dirs = this.app.config.controllers;
-        }
-        if (typeof dirs === 'string') {
-            this.doScanControllers(dirs, this);
-        }
-        else {
-            dirs.forEach((cur) => {
-                this.doScanControllers(cur, this);
-            });
-        }
+        const scanner = new ModuleScanner_1.ModuleScanner(process.cwd(), scanDir, (Module) => {
+            this.handleController(Module);
+        });
+        scanner.scan();
     }
+    /**
+     * 校验权限
+     * @param ctx
+     * @param target
+     * @param handler
+     * @returns
+     */
     checkAuthPermit(ctx, target, handler) {
-        var _a;
+        var _a, _b;
         const authorizePermit = Reflect.getMetadata('ccc:authorizePermit', target, handler);
         if (authorizePermit) {
+            this.app.logger.debug(`controller ${target} ${handler} authorizePermit ${authorizePermit}`);
             return true;
         }
-        return (_a = ctx.auth) === null || _a === void 0 ? void 0 : _a.isAuthorized();
+        this.app.logger.debug(`controller ${target} ${handler} auth ${(_a = ctx.auth) === null || _a === void 0 ? void 0 : _a.isAuthorized()}`);
+        return (_b = ctx.auth) === null || _b === void 0 ? void 0 : _b.isAuthorized();
     }
     /**
      * 构建参数
@@ -52,7 +47,10 @@ class Router extends KoaRouter {
         if (fileds && fileds.length) {
             fileds.forEach((field) => {
                 if (field.type === 'param') {
-                    args[field.index] = ctx.request.query[field.name];
+                    args[field.index] = ctx.request.query[field.name] || ctx.params[field.name];
+                }
+                if (field.type === 'file') {
+                    args[field.index] = ctx.request.files[field.name];
                 }
                 if (field.type === 'req') {
                     args[field.index] = ctx.req;
@@ -81,6 +79,9 @@ class Router extends KoaRouter {
                 if (field.type === 'sessionParam') {
                     args[field.index] = ctx.session[field.name];
                 }
+                if (field.type === 'auth') {
+                    args[field.index] = ctx.auth;
+                }
             });
         }
         return args;
@@ -106,62 +107,74 @@ class Router extends KoaRouter {
             }
         }
     }
-    doScanControllers(dir, router) {
-        let routerDir = node_path_1.default.join(process.cwd(), dir);
+    /**
+     * 处理Controller
+     * @param Clazz
+     */
+    handleController(Clazz) {
         try {
-            if (node_fs_1.default.existsSync(routerDir)) {
-                const files = node_fs_1.default.readdirSync(routerDir);
-                files.forEach((file) => {
-                    let fileName = node_path_1.default.basename(file, node_path_1.default.extname(file));
-                    const module = require(node_path_1.default.resolve(routerDir, fileName));
-                    const Clazz = module.default || module;
-                    const c = new Clazz();
-                    const isController = Reflect.hasMetadata('ccc:rootPath', Clazz);
-                    const hasRoutes = Reflect.hasMetadata('ccc:routes', c);
-                    if (isController && hasRoutes) {
-                        const basePath = Reflect.getMetadata('ccc:rootPath', Clazz);
-                        const routes = Reflect.getMetadata('ccc:routes', c);
-                        routes.forEach((route) => {
-                            const currentPath = basePath + route.url;
-                            const handler = c[route.handler];
-                            const fileds = Reflect.getMetadata('ccc:fileds', c, route.handler);
-                            const validates = Reflect.getMetadata('ccc:validates', c, route.handler);
-                            const returnType = Reflect.getMetadata('design:returntype', c, route.handler);
-                            const contentType = Reflect.getMetadata('ccc:content-type', c, route.handler);
-                            const statusCode = Reflect.getMetadata('ccc:status-code', c, route.handler);
-                            const interceptors = this.app.getInterceptors();
-                            let middlewares = [];
-                            this.app.koaBody ? middlewares.push(this.app.koaBody) : false;
-                            middlewares = middlewares.concat(interceptors);
-                            router[route.method](currentPath, ...middlewares, async (ctx, next) => {
-                                try {
-                                    if (!this.checkAuthPermit(ctx, c, route.handler)) {
-                                        this.app.handlerError(new ForbiddenError_1.ForbiddenError(ctx), ctx);
-                                        return;
-                                    }
-                                    const args = this.buildHandleArguments(ctx, c, fileds);
-                                    // 校验
-                                    await this.validateFields(args, validates);
-                                    const data = await handler.apply(c, args);
-                                    if (statusCode) {
-                                        ctx.status = statusCode;
-                                    }
-                                    if (returnType && data !== undefined) {
-                                        ctx.body = data;
-                                    }
-                                    if (contentType) {
-                                        ctx.type = contentType;
-                                    }
-                                }
-                                catch (e) {
-                                    this.app.handlerError(e, ctx);
-                                }
-                                finally {
-                                    await next();
-                                }
-                            });
-                        });
-                    }
+            const c = new Clazz();
+            const isController = Reflect.hasMetadata('ccc:rootPath', Clazz);
+            const hasRoutes = Reflect.hasMetadata('ccc:routes', c);
+            if (isController && hasRoutes) {
+                const basePath = Reflect.getMetadata('ccc:rootPath', Clazz);
+                const routes = Reflect.getMetadata('ccc:routes', c);
+                routes.forEach((route) => {
+                    const currentPath = basePath + route.url;
+                    this.app.logger.debug(`register controller url ${currentPath}`);
+                    const handler = c[route.handler];
+                    const proxyHandler = new Proxy(handler, {
+                        apply(method, ctx, argArray) {
+                            // method 是否存在aspect
+                            const pointCuts = Reflect.getMetadata('ccc:pointcuts', ctx, method.name);
+                            if (pointCuts) {
+                                // 暂时只允许一个aspect
+                                const pointCut = pointCuts[0];
+                                const aspect = Global_1.Global.aspects.get(pointCut.key);
+                                return aspect === null || aspect === void 0 ? void 0 : aspect.advice(ctx, method, argArray, aspect, pointCut.data);
+                            }
+                            return Reflect.apply(method, ctx, argArray);
+                        }
+                    });
+                    const fileds = Reflect.getMetadata('ccc:fileds', c, route.handler);
+                    const validates = Reflect.getMetadata('ccc:validates', c, route.handler);
+                    const returnType = Reflect.getMetadata('design:returntype', c, route.handler);
+                    this.app.logger.debug(`${currentPath} returnType: ${returnType}`);
+                    const contentType = Reflect.getMetadata('ccc:content-type', c, route.handler);
+                    this.app.logger.debug(`${currentPath} contentType: ${contentType}`);
+                    const statusCode = Reflect.getMetadata('ccc:status-code', c, route.handler);
+                    this.app.logger.debug(`${currentPath} statusCode: ${statusCode}`);
+                    const interceptors = this.app.getInterceptors();
+                    let middlewares = [];
+                    this.app.koaBody ? middlewares.push(this.app.koaBody) : false;
+                    middlewares = middlewares.concat(interceptors);
+                    this[route.method](currentPath, ...middlewares, async (ctx, next) => {
+                        try {
+                            if (!this.checkAuthPermit(ctx, c, route.handler)) {
+                                this.app.handlerError(new ForbiddenError_1.ForbiddenError(ctx), ctx);
+                                return;
+                            }
+                            const args = this.buildHandleArguments(ctx, c, fileds);
+                            // 校验
+                            await this.validateFields(args, validates);
+                            const data = await proxyHandler.apply(c, args);
+                            if (statusCode) {
+                                ctx.status = statusCode;
+                            }
+                            if (returnType && data !== undefined) {
+                                ctx.body = data;
+                            }
+                            if (contentType) {
+                                ctx.type = contentType;
+                            }
+                        }
+                        catch (e) {
+                            this.app.handlerError(e, ctx);
+                        }
+                        finally {
+                            await next();
+                        }
+                    });
                 });
             }
         }

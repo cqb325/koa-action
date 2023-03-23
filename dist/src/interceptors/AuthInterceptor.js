@@ -1,61 +1,44 @@
 "use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthInterceptor = void 0;
+const Keys_1 = require("./../constaints/Keys");
 const koa_action_1 = require("../../koa-action");
-const { verify, TokenExpiredError, JsonWebTokenError } = require('jsonwebtoken');
+const koa_action_2 = require("../../koa-action");
+const JwtUtil_1 = require("../utils/JwtUtil");
 const node_url_1 = __importDefault(require("node:url"));
 class AuthInterceptor extends koa_action_1.BaseInterceptor {
-    constructor(options) {
-        super();
-        this.secret = options.secret;
-    }
     async checkAuth(ctx) {
         ctx.auth = new koa_action_1.Authorization();
-        if (!ctx.header || !ctx.header.authorization) {
+        if (!ctx.header || !ctx.header.cmhiauth) {
             ctx.auth.setAuthorized(false);
             return true;
         }
-        const parts = ctx.header.authorization.trim().split(' ');
-        let token = '';
-        if (parts.length === 2) {
-            const scheme = parts[0];
-            const credentials = parts[1];
-            if (/^Bearer$/i.test(scheme)) {
-                token = credentials;
-            }
+        const token = ctx.header.cmhiauth.trim();
+        const publicKey = await this.redisTemplate.get(Keys_1.KEY_LOGIN_RSA_PREFIX + "PUBLIC") || '';
+        const ret = await JwtUtil_1.JwtUtil.checkToken(publicKey, token, ctx);
+        if (ret) {
+            ctx.auth.setData(ret);
         }
-        const ret = await this.verifyToken(ctx, token);
-        ctx.auth.setAuthorized(ret);
+        ctx.auth.setAuthorized(!!ret);
         return true;
     }
-    async verifyToken(ctx, token) {
-        return await new Promise((resolve) => {
-            verify(token, this.secret, (err, decoded) => {
-                if (err) {
-                    if (err instanceof TokenExpiredError) {
-                        throw new koa_action_1.AuthorizationError(ctx, 'Authorization is expired');
-                    }
-                    else if (err instanceof JsonWebTokenError) {
-                        throw new koa_action_1.AuthorizationError(ctx, 'Authorization token is invalid');
-                    }
-                    else {
-                        throw new koa_action_1.AuthorizationError(ctx, 'Authorization is invalid');
-                    }
-                    resolve(false);
-                }
-                else {
-                    resolve(true);
-                }
-            });
-        });
-    }
     async preHandle(ctx) {
-        console.log('before controller...');
         const parsedUrl = node_url_1.default.parse(ctx.url);
-        const needAuth = this.antInit().antMatchers('/admin/login', '/admin/list').permitAll(parsedUrl.pathname);
+        const needAuth = this.antInit().sameOrign(ctx)
+            .antMatchers('/manager/user/captchaGet', '/manager/user/getLoginPublicKey', '/manager/user/login')
+            .antMatchers('/file/(.*)').permitAll(parsedUrl.pathname);
         console.log(needAuth);
         if (needAuth) {
             return await this.checkAuth(ctx);
@@ -67,7 +50,10 @@ class AuthInterceptor extends koa_action_1.BaseInterceptor {
         return true;
     }
     afterHandle(ctx) {
-        console.log('after controller...');
     }
 }
+__decorate([
+    koa_action_2.Autowired,
+    __metadata("design:type", koa_action_2.RedisTemplate)
+], AuthInterceptor.prototype, "redisTemplate", void 0);
 exports.AuthInterceptor = AuthInterceptor;
