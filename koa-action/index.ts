@@ -2,6 +2,7 @@ import 'reflect-metadata';
 export * from "./App";
 export * from './BaseInterceptor';
 export * from './DefaultDataResponse';
+export * from './PageDataResponse';
 export * from './decorators';
 export * from './errors/AuthorizationError';
 export * from './errors/ForbiddenError';
