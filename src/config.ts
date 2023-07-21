@@ -2,16 +2,16 @@ import { Global } from "../koa-action/Global";
 import path from "node:path";
 
 Global.config = {
-    serviceName: 'fqbdService',
+    serviceName: 'test',
     port: 18080,
     upload: 'uploads',
     dataSource: {
         type: "mysql",
-        host: "172.21.46.186",
+        host: "localhost",
         port: 3306,
-        username: "speedtest",
-        password: "cmcc2021",
-        database: "fqbd",
+        username: "test",
+        password: "test",
+        database: "test",
         entities: ['src/**/*.entity{.js,.ts}'],
         synchronize: false,
         logger: undefined, // 'advanced-console',
@@ -28,7 +28,7 @@ Global.config = {
         ttl: 5 * 60 * 1000  // 5分钟
     },
     logger: {
-        name: 'fqbd',
+        name: 'test',
         numBackups: 15,
         pattern: '[%d{yyyy-MM-dd hh:mm:ss}] [pid:%z] [%p] [%C.%M] %c - %m',
         path: path.resolve(process.cwd(), 'logs', 'logs.log'),

@@ -18,7 +18,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
         if (v !== undefined) module.exports = v;
     }
     else if (typeof define === "function" && define.amd) {
-        define(["require", "exports", "reflect-metadata", "./App", "./BaseInterceptor", "./DefaultDataResponse", "./decorators", "./errors/AuthorizationError", "./errors/ForbiddenError", "./errors/HttpError", "./errors/RequestParamInvalidError", "./Authorization", "./BaseController", "./Interceptor", "./redis", "./IPageHelper"], factory);
+        define(["require", "exports", "reflect-metadata", "./App", "./BaseInterceptor", "./DefaultDataResponse", "./PageDataResponse", "./decorators", "./errors/AuthorizationError", "./errors/ForbiddenError", "./errors/HttpError", "./errors/RequestParamInvalidError", "./Authorization", "./BaseController", "./Interceptor", "./redis", "./IPageHelper"], factory);
     }
 })(function (require, exports) {
     "use strict";
@@ -27,6 +27,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     __exportStar(require("./App"), exports);
     __exportStar(require("./BaseInterceptor"), exports);
     __exportStar(require("./DefaultDataResponse"), exports);
+    __exportStar(require("./PageDataResponse"), exports);
     __exportStar(require("./decorators"), exports);
     __exportStar(require("./errors/AuthorizationError"), exports);
     __exportStar(require("./errors/ForbiddenError"), exports);
