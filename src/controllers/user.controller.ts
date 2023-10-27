@@ -1,5 +1,5 @@
 import { LoginModel } from './../po/LoginModel';
-import { Controller, Get, Post, Param, Headers, Authorization, Auth, Log, Service, ContentType, Body, Status, Context, AuthPermit, Validate, DefaultDataResponse, DataResponse, Request, Session } from "../../koa-action";
+import { Controller, Get, Post, Param, Headers, Authorization, Auth, Log, Service, ContentType, Body, Status, Context, AuthPermit, Validate, DefaultDataResponse, DataResponse, Request, Session, Autowired } from "../../koa-action";
 import { AdminService } from "../services/AdminService";
 import { Captcha } from "../utils/captcha";
 import { SysLog } from '../aspects/SysLog';
@@ -10,7 +10,7 @@ export default class UserController {
     @Log()
     private log: any
 
-    @Service
+    @Autowired
     private adminService: AdminService;
     
     @ContentType('jpg')

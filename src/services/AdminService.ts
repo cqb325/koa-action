@@ -1,5 +1,5 @@
 import { SysAdminUser } from './../entries/SysAdminUser.entity';
-import { Autowired, AutoRepository, RedisTemplate } from "../../koa-action";
+import { Autowired, AutoRepository, RedisTemplate, Service } from "../../koa-action";
 import { Repository } from "typeorm/repository/Repository";
 import { Photo } from "../entries/Photo.entity";
 import { User } from "../po/User";
@@ -11,6 +11,7 @@ const md5 = require('md5');
 const crypt = require('crypt');
 const jwt = require('jsonwebtoken');
 
+@Service
 export class AdminService {
 
     @AutoRepository(SysAdminUser)

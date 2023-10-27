@@ -9,7 +9,7 @@
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Global = void 0;
+    exports.getBean = exports.registerBean = exports.Global = void 0;
     class Global {
     }
     exports.Global = Global;
@@ -25,4 +25,30 @@
             data
         });
     };
+    /**
+     * 注册实例化对象
+     * @param type 对象的类型
+     * @param instance 对象实例
+     */
+    function registerBean(type, instance) {
+        Global.beans.set(type, instance);
+    }
+    exports.registerBean = registerBean;
+    /**
+     * 从容器中获取实例
+     * @param type 对象类型
+     * @returns
+     */
+    function getBean(type) {
+        const typeSet = Global.beans.keys();
+        let key = typeSet.next();
+        while (!key.done) {
+            if (key.value == type || key.value.__proto__ == type) {
+                return Global.beans.get(key.value);
+            }
+            key = typeSet.next();
+        }
+        return null;
+    }
+    exports.getBean = getBean;
 });

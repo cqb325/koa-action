@@ -35,3 +35,29 @@ export class Global {
         } as PointCut);
     }
 }
+
+/**
+ * 注册实例化对象
+ * @param type 对象的类型
+ * @param instance 对象实例
+ */
+export function registerBean (type: any, instance: any) {
+    Global.beans.set(type, instance);
+}
+
+/**
+ * 从容器中获取实例
+ * @param type 对象类型
+ * @returns 
+ */
+export function getBean (type: any) {
+    const typeSet = Global.beans.keys();
+    let key = typeSet.next();
+    while(!key.done) {
+        if (key.value == type || key.value.__proto__ == type) {
+            return Global.beans.get(key.value);
+        }
+        key = typeSet.next();
+    }
+    return null;
+}

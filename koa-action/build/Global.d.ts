@@ -24,3 +24,15 @@ export declare class Global {
     static aspects: Map<string, Aspect>;
     static addAopPointCut: (key: string, target: any, method: string, data: any) => void;
 }
+/**
+ * 注册实例化对象
+ * @param type 对象的类型
+ * @param instance 对象实例
+ */
+export declare function registerBean(type: any, instance: any): void;
+/**
+ * 从容器中获取实例
+ * @param type 对象类型
+ * @returns
+ */
+export declare function getBean(type: any): any;

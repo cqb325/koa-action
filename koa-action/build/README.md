@@ -121,10 +121,10 @@ yarn add koa-action
 	class AdminController {}
 
 ### @Service
-属性装饰器 注入该类型的对象，对应的对象只初始化一次，无传值
+类装饰器 注册Service类型的实例，无传值
 
 	@Service
-    private adminService: AdminService;
+	export class AdminService {}
 
 ### @Log()
 属性装饰器 注入日志，对应的对象只初始化一次

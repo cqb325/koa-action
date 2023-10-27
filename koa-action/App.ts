@@ -5,7 +5,7 @@ import KoaBody from 'koa-body';
 import { Interceptor } from './Interceptor';
 import { DefaultDataResponse } from './DefaultDataResponse';
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { Global } from "./Global";
+import { Global, registerBean } from "./Global";
 import { Log, Config } from "./decorators";
 import { Logger } from 'log4js';
 import { ModuleScanner } from './ModuleScanner';
@@ -276,6 +276,7 @@ export class KoaAction {
         }
         if (this.dataSource) {
             Global.dataSource = this.dataSource;
+            registerBean(DataSource, this.dataSource);
             await this.dataSource.initialize();
         }
         return this;

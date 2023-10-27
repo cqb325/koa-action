@@ -1,5 +1,5 @@
 import { KEY_LOGIN_RSA_PREFIX } from './../constaints/Keys';
-import { BaseInterceptor, Authorization, AuthorizationError } from '../../koa-action';
+import { BaseInterceptor, Authorization } from '../../koa-action';
 import { Autowired, RedisTemplate } from '../../koa-action';
 import { JwtUtil } from '../utils/JwtUtil';
 import url from 'node:url';
@@ -33,6 +33,7 @@ export class AuthInterceptor extends BaseInterceptor {
 
         const needAuth = this.antInit().sameOrign(ctx)
             .antMatchers('/manager/user/captchaGet', '/manager/user/getLoginPublicKey', '/manager/user/login')
+            .antMatchers('/admin/list')
             .antMatchers('/file/(.*)').permitAll(parsedUrl.pathname);
         console.log(needAuth);
         

@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Param, Headers, Service, ContentType, Body, Status, Context, AuthPermit, Validate, DefaultDataResponse, DataResponse } from "../../koa-action";
+import { Controller, Get, Post, Param, Headers, ContentType, Body, Context, Validate, DefaultDataResponse, DataResponse, Autowired } from "../../koa-action";
 import { AdminService } from "../services/AdminService";
 import { User } from "../po/User";
 
 @Controller('/admin')
 class AdminController {
 
-    @Service
+    @Autowired
     private adminService: AdminService;
     
     @ContentType('text/plain')
