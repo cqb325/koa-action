@@ -9,11 +9,14 @@
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Autowired = void 0;
+    exports.Component = void 0;
     const Global_1 = require("../Global");
-    function Autowired(target, propertyKey) {
-        const Type = Reflect.getMetadata('design:type', target, propertyKey);
-        target[propertyKey] = (0, Global_1.getBean)(Type);
+    /**
+     * 标识类进行注册对象
+     * @param Type
+     */
+    function Component(Type) {
+        (0, Global_1.registerBean)(Type, new Type());
     }
-    exports.Autowired = Autowired;
+    exports.Component = Component;
 });

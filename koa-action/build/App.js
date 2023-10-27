@@ -265,6 +265,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
             }
             if (this.dataSource) {
                 Global_1.Global.dataSource = this.dataSource;
+                (0, Global_1.registerBean)(typeorm_1.DataSource, this.dataSource);
                 await this.dataSource.initialize();
             }
             return this;
