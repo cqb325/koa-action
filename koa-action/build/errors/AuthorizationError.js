@@ -13,7 +13,7 @@
     const HttpError_1 = require("./HttpError");
     class AuthorizationError extends HttpError_1.HttpError {
         constructor(ctx, message) {
-            super(403);
+            super(401);
             this.name = 'AuthorizationError';
             Object.setPrototypeOf(this, AuthorizationError.prototype);
             const uri = `${ctx.request.method} ${ctx.request.url}`; // todo: check it it works in koa
